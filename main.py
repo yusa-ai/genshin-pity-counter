@@ -11,6 +11,8 @@ from functions import *
 
 wish_history_url = fetch_wish_history_url()
 
+# Initialize web driver to load and fetch the Wish History page
+
 options = Options()
 options.headless = True
 
@@ -19,6 +21,9 @@ service = Service("./geckodriver-v0.31.0-win64/geckodriver.exe")
 driver = webdriver.Firefox(options=options, service=service)
 
 driver.get(wish_history_url)
+
+# The webpage loads the wish history asynchronously, in JS. Wait 10s for a table row (1 wish) to load, then
+# fetch all the table rows in view
 
 try:
     row = WebDriverWait(driver, 10).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR,
