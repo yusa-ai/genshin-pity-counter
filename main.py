@@ -9,7 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from functions import *
 
-WISH_HISTORY_URL = get_wish_history_url()
+wish_history_url = get_wish_history_url()
 
 options = Options()
 options.headless = True
@@ -18,10 +18,11 @@ service = Service("./geckodriver-v0.31.0-win64/geckodriver.exe")
 
 driver = webdriver.Firefox(options=options, service=service)
 
-driver.get(WISH_HISTORY_URL)
+driver.get(wish_history_url)
 
 try:
-    row = WebDriverWait(driver, 10).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR, "span.cell.name.item_3")))
+    row = WebDriverWait(driver, 10).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR,
+                                                                                           "span.cell.name.item_3")))
     print("History has loaded. Proceeding...")
 except TimeoutException:
     print("Loading took too much time. Aborting...")
