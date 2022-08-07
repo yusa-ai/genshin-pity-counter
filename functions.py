@@ -13,11 +13,9 @@ def fetch_wish_history_url() -> str:
     """
     try:
         with open(OUTPUT_LOG_PATH) as output_log:
-            lines = output_log.readlines()
-
-            for line in lines:
-                if line.startswith(WISH_HISTORY_URL_PREFIX):
-                    return line[len(WISH_HISTORY_URL_PREFIX):]
+            line = [line for line in output_log.readlines() if line.startswith(WISH_HISTORY_URL_PREFIX)]
+            # It should only match one
+            return line[0][len(WISH_HISTORY_URL_PREFIX):]
 
     except FileNotFoundError as e:
         print(e)
