@@ -37,5 +37,7 @@ parent_div = first_row.find_element(By.XPATH, "..")
 
 table_rows = parent_div.get_attribute("innerHTML")
 
+driver.quit()
+
 soup = BeautifulSoup(table_rows, "html.parser")
 print(soup.prettify())
