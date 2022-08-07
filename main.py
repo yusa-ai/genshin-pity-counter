@@ -31,6 +31,7 @@ try:
     print("History has loaded. Proceeding...")
 except TimeoutException:
     print("Loading took too much time. Aborting...")
+    raise
 
 first_row = driver.find_element(By.CLASS_NAME, "log-item-row")
 parent_div = first_row.find_element(By.XPATH, "..")

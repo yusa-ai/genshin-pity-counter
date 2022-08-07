@@ -17,5 +17,6 @@ def fetch_wish_history_url() -> str:
             # It should only match one
             return lines[0][len(WISH_HISTORY_URL_PREFIX):]
 
-    except FileNotFoundError as e:
-        print(e)
+    except FileNotFoundError:
+        print("Wish History URL not found. Make sure it is open in-game before running this program.")
+        raise
