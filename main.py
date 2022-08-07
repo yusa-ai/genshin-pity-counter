@@ -9,7 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from functions import *
 
-wish_history_url = get_wish_history_url()
+wish_history_url = fetch_wish_history_url()
 
 options = Options()
 options.headless = True
