@@ -40,4 +40,4 @@ def fetch_wish_history_url() -> str:
 
         except FileNotFoundError:
             print("Wish History URL not found. Make sure it is open in-game before running this program.")
-            raise
+            exit(1)
