@@ -42,7 +42,7 @@ except TimeoutException:
 # Cycle through all the pages
 
 five_star_found: bool = False
-page_count = 1
+page_count: int = 1
 table_rows: str = str()
 
 while not five_star_found:
