@@ -6,10 +6,15 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
+import time
 
 from functions import *
 
-wish_history_url = fetch_wish_history_url()
+WAIT_TIME_INITIAL_LOAD = 10
+WAIT_TIME_BETWEEN_PAGES = 3
+FIVE_STAR_STRING = "(5-Star)"
+
+wish_history_url: str = fetch_wish_history_url()
 
 # Initialize web driver to load and fetch the Wish History page
 
@@ -24,21 +29,43 @@ driver.get(wish_history_url)
 
 # The webpage loads the wish history asynchronously, in JS. Wait 10s for a table row (1 wish) to load, then
 # fetch all the table rows in view
-
 try:
-    row = WebDriverWait(driver, 10).until(expected_conditions.presence_of_element_located((By.CSS_SELECTOR,
-                                                                                           "span.cell.name.item_3")))
+    WebDriverWait(driver, WAIT_TIME_INITIAL_LOAD).until(
+        expected_conditions.presence_of_element_located((By.CSS_SELECTOR,
+                                                         "span.cell.name.item_3")))
     print("History has loaded. Proceeding...")
 except TimeoutException:
     print("Loading took too much time. Aborting...")
     exit(1)
 
-first_row = driver.find_element(By.CLASS_NAME, "log-item-row")
-parent_div = first_row.find_element(By.XPATH, "..")
+# Cycle through all the pages
 
-table_rows = parent_div.get_attribute("innerHTML")
+five_star_found: bool = False
+page_count = 1
+table_rows: str = str()
+
+while not five_star_found:
+    print(f"Fetching wishes from page {page_count}")
+    time.sleep(WAIT_TIME_BETWEEN_PAGES)
+
+    first_row = driver.find_element(By.CLASS_NAME, "log-item-row")
+    parent_div = first_row.find_element(By.XPATH, "..")
+
+    rows = parent_div.get_attribute("innerHTML")
+    table_rows += rows
+
+    if FIVE_STAR_STRING in rows:
+        five_star_found = True
+        print("Found 5-Star. Fetching done.")
+    else:
+        # Go to next page
+        next_page_button = driver.find_element(By.CSS_SELECTOR, "span.page-item.to-next")
+        next_page_button.click()
+        page_count += 1
+
+        # TODO Handle case where no 5-star is found by checking page number
 
 driver.quit()
 
 soup = BeautifulSoup(table_rows, "html.parser")
-print(soup.prettify())
+# print(soup.prettify())
