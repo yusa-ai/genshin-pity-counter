@@ -36,7 +36,14 @@ try:
                                                          "span.cell.name.item_3")))
     print("History has loaded. Proceeding...")
 except TimeoutException:
-    print("Loading took too much time. Aborting...")
+    print("Loading is taking too much time. Aborting...")
+
+    # Wish History URLs expire after a certain time
+    if os.path.exists(LOCAL_URL_PATH):
+        os.remove(LOCAL_URL_PATH)
+        print("It may be that the previously fetched URL has now expired. Please open your Wish History in-game and "
+              "try again.")
+
     exit(1)
 
 # Cycle through all the pages

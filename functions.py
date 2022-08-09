@@ -4,7 +4,8 @@ import os
 
 LOCAL_URL_PATH = "url.txt"
 OUTPUT_LOG_PATH = f"{os.environ['USERPROFILE']}/AppData/LocalLow/miHoYo/Genshin Impact/output_log.txt"
-WISH_HISTORY_URL_PREFIX = "OnGetWebViewPageFinish:"
+OUTPUT_LOG_URL_PREFIX = "OnGetWebViewPageFinish:"
+WISH_HISTORY_URL_PREFIX = "https://webstatic-sea.hoyoverse.com/genshin/event/e20190909gacha/index.html"
 
 
 def fetch_wish_history_url() -> str:
@@ -27,10 +28,13 @@ def fetch_wish_history_url() -> str:
 
         try:
             with open(OUTPUT_LOG_PATH) as output_log:
-                lines = [line for line in output_log.readlines() if line.startswith(WISH_HISTORY_URL_PREFIX)]
+                lines = [line for line in output_log.readlines() if line.startswith(OUTPUT_LOG_URL_PREFIX)]
 
                 # It should only match one
-                url = lines[0][len(WISH_HISTORY_URL_PREFIX):]
+                url = lines[0][len(OUTPUT_LOG_URL_PREFIX):]
+
+                if url is None or not url.startswith(WISH_HISTORY_URL_PREFIX):
+                    raise FileNotFoundError
 
                 # Save it locally to speed up next run
                 with open(LOCAL_URL_PATH, "w") as file:
@@ -39,5 +43,5 @@ def fetch_wish_history_url() -> str:
                 return url
 
         except FileNotFoundError:
-            print("Wish History URL not found. Make sure it is open in-game before running this program.")
+            print("Wish History URL not found. Make sure Wish History is open in-game before running this program.")
             exit(1)
