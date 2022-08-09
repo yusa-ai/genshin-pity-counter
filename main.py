@@ -2,6 +2,7 @@ import time
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
@@ -33,8 +34,8 @@ driver.get(wish_history_url)
 try:
     WebDriverWait(driver, WAIT_TIME_INITIAL_LOAD).until(
         expected_conditions.presence_of_element_located((By.CSS_SELECTOR,
-                                                         "span.cell.name.item_3")))
-    print("History has loaded. Proceeding...")
+                                                         "div.table-content")))
+    print("Wish History has loaded. Proceeding...")
 except TimeoutException:
     print("Loading is taking too much time. Aborting...")
 
@@ -45,6 +46,16 @@ except TimeoutException:
               "try again.")
 
     exit(1)
+
+else:
+    # Now, check if there is any record at all
+    try:
+        driver.find_element(By.CSS_SELECTOR, "div.empty-row")
+        print("Wish History is empty.")
+        exit(0)
+
+    except NoSuchElementException:
+        pass
 
 # Cycle through all the pages
 
