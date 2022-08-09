@@ -53,9 +53,9 @@ else:
 
     driver.find_element(By.CSS_SELECTOR, ".type-select-container").click()
 
-    items = driver.find_elements(By.CSS_SELECTOR, "ul.ul-list > li")
-    items = [item for item in items if item.get_attribute("data-id") == "301"]
-    items[0].click()
+    select_items = driver.find_elements(By.CSS_SELECTOR, "ul.ul-list > li")
+    item = next(item for item in select_items if item.get_attribute("data-id") == "301")
+    item.click()
 
     # Now, check if there is any record at all
     try:

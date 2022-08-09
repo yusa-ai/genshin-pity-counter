@@ -35,12 +35,11 @@ def fetch_wish_history_url() -> str:
                     raise FileNotFoundError
 
                 # It should only match exactly one
-                wish_history_matches = [url for url in prefix_matches if url.startswith(WISH_HISTORY_URL_PREFIX)]
+                url = next((url for url in prefix_matches if url.startswith(WISH_HISTORY_URL_PREFIX)),
+                           None)
 
-                if len(wish_history_matches) == 0:
+                if url is None:
                     raise FileNotFoundError
-
-                url = wish_history_matches[0]
 
                 # Save it locally to speed up next run
                 with open(LOCAL_URL_PATH, "w") as file:
