@@ -21,7 +21,7 @@ wish_history_url: str = fetch_wish_history_url()
 # Initialize web driver to load and fetch the Wish History page
 
 options = Options()
-options.headless = True
+# options.headless = True
 
 service = Service("./geckodriver-v0.31.0-win64/geckodriver.exe")
 
@@ -35,11 +35,12 @@ try:
     WebDriverWait(driver, WAIT_TIME_INITIAL_LOAD).until(
         expected_conditions.presence_of_element_located((By.CSS_SELECTOR,
                                                          "div.table-content")))
-    print("Wish History has loaded. Proceeding...")
+    # print("Wish History has loaded. Proceeding...")
 except TimeoutException:
     print("Loading is taking too much time. Aborting...")
 
     # Wish History URLs expire after a certain time
+    # TODO test for expiration time and check that instead of always deleting the saved URL file
     if os.path.exists(LOCAL_URL_PATH):
         os.remove(LOCAL_URL_PATH)
         print("It may be that the previously fetched URL has now expired. Please open your Wish History in-game and "
@@ -48,6 +49,14 @@ except TimeoutException:
     exit(1)
 
 else:
+    # Select limited rate-up banner history
+
+    driver.find_element(By.CSS_SELECTOR, ".type-select-container").click()
+
+    items = driver.find_elements(By.CSS_SELECTOR, "ul.ul-list > li")
+    items = [item for item in items if item.get_attribute("data-id") == "301"]
+    items[0].click()
+
     # Now, check if there is any record at all
     try:
         driver.find_element(By.CSS_SELECTOR, "div.empty-row")
