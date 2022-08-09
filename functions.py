@@ -22,19 +22,25 @@ def fetch_wish_history_url() -> str:
             return file.readline()
 
     except FileNotFoundError:
-        print("No local URL found. Fetching it from the game's output log...")
+        print("No local URL found. Fetching it from the game...")
 
         # Fetch it from the game's output log
 
         try:
             with open(OUTPUT_LOG_PATH) as output_log:
-                lines = [line for line in output_log.readlines() if line.startswith(OUTPUT_LOG_URL_PREFIX)]
+                prefix_matches = [line[len(OUTPUT_LOG_URL_PREFIX):] for line in output_log.readlines() if
+                                  line.startswith(OUTPUT_LOG_URL_PREFIX)]
 
-                # It should only match one
-                url = lines[0][len(OUTPUT_LOG_URL_PREFIX):]
-
-                if url is None or not url.startswith(WISH_HISTORY_URL_PREFIX):
+                if len(prefix_matches) == 0:
                     raise FileNotFoundError
+
+                # It should only match exactly one
+                wish_history_matches = [url for url in prefix_matches if url.startswith(WISH_HISTORY_URL_PREFIX)]
+
+                if len(wish_history_matches) == 0:
+                    raise FileNotFoundError
+
+                url = wish_history_matches[0]
 
                 # Save it locally to speed up next run
                 with open(LOCAL_URL_PATH, "w") as file:
