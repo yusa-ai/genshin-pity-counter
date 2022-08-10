@@ -3,12 +3,12 @@ import time
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.edge.options import Options
+from selenium.webdriver.edge.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 from functions import *
 
@@ -17,16 +17,20 @@ WAIT_TIME_BETWEEN_PAGES = 2
 FIVE_STAR_STRING = "(5-Star)"
 MAX_ENTRIES_PER_PAGE = 6
 
+# TODO List of parameters to implement:
+# --debug
+# --banners to choose which banner(s) to parse
+
 wish_history_url: str = fetch_wish_history_url()
 
 # Initialize web driver to load and fetch the Wish History page
 
 options = Options()
-options.headless = True
+# options.headless = True
 
-service = Service(ChromeDriverManager().install())
+service = Service(EdgeChromiumDriverManager().install())
 
-driver = webdriver.Chrome(options=options, service=service)
+driver = webdriver.ChromiumEdge(options=options, service=service)
 
 driver.get(wish_history_url)
 
@@ -106,4 +110,5 @@ while not five_star_found:
 driver.quit()
 
 five_star_pity = (current_page - 1) * MAX_ENTRIES_PER_PAGE + last_page_number_of_wishes
-print(f"5✰ Pity: {five_star_pity}/90")
+
+print(f"5✰ Pity: {five_star_pity}/90 wishes")
