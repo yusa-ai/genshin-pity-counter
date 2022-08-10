@@ -28,7 +28,8 @@ def fetch_wish_history_url() -> str:
 
         try:
             with open(OUTPUT_LOG_PATH) as output_log:
-                prefix_matches = [line[len(OUTPUT_LOG_URL_PREFIX):] for line in output_log.readlines() if
+                # Multiple matches possible according to tests
+                prefix_matches = [line.removeprefix(OUTPUT_LOG_URL_PREFIX) for line in output_log.readlines() if
                                   line.startswith(OUTPUT_LOG_URL_PREFIX)]
 
                 if len(prefix_matches) == 0:

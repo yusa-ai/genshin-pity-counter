@@ -29,7 +29,7 @@ driver = webdriver.Firefox(options=options, service=service)  # TODO move to Chr
 
 driver.get(wish_history_url)
 
-# The webpage loads the wish history asynchronously, in JS. Wait 10s for a table row (1 wish) to load, then
+# The webpage loads the wish history asynchronously, in JS. Wait for a table row (1 wish) to load, then
 # fetch all the table rows in view
 try:
     WebDriverWait(driver, WAIT_TIME_INITIAL_LOAD).until(
@@ -38,15 +38,11 @@ try:
     print("Wish History has loaded. Proceeding...")
 
 except TimeoutException:
-    print("Loading is taking too much time. Aborting...")
+    print("Could not load Wish History. Aborting...")
 
-    # Wish History URLs expire after a certain time
-    # TODO test for expiration time and check that instead of always deleting the saved URL file
-    # OR Get rid of the local file entirely
-    if os.path.exists(LOCAL_URL_PATH):
-        os.remove(LOCAL_URL_PATH)
-        print("It may be that the previously fetched URL has now expired. Please open your Wish History in-game and "
-              "try again.")
+    # TODO Check for this
+    print("It may be that the previously fetched URL has now expired. Please open your Wish History in-game and "
+          "try again.")
 
     driver.quit()
     exit(1)
@@ -81,23 +77,15 @@ last_page_number_of_wishes = int()
 while not five_star_found:
     print(f"Fetching wishes from page {current_page}")
 
-    # try:
-    #     first_row = driver.find_element(By.CLASS_NAME, "log-item-row")
-    # except NoSuchElementException:
-    #     break
-    #
-    # parent_div = first_row.find_element(By.XPATH, "..")
-    #
-    # rows = parent_div.get_attribute("innerHTML")
-    # table_rows += rows
-
     rows = driver.find_elements(By.CSS_SELECTOR, "div.log-item-row")
     five_star_index = next((rows.index(row) for row in rows if FIVE_STAR_STRING in row.text), None)
     five_star_found = five_star_index is not None
 
     if five_star_found:
         last_page_number_of_wishes = five_star_index
-        print("5✰ found: NAME")  # TODO add name of 5✰
+        five_star_name = rows[five_star_index].text.removesuffix(FIVE_STAR_STRING).strip()
+
+        print(f"5✰ found: {five_star_name}")
 
     else:
         # Go to next page
