@@ -21,7 +21,7 @@ wish_history_url: str = fetch_wish_history_url()
 # Initialize web driver to load and fetch the Wish History page
 
 options = Options()
-# options.headless = True
+options.headless = True
 
 service = Service("./geckodriver-v0.31.0-win64/geckodriver.exe")
 
@@ -29,8 +29,7 @@ driver = webdriver.Firefox(options=options, service=service)  # TODO move to Chr
 
 driver.get(wish_history_url)
 
-# The webpage loads the wish history asynchronously, in JS. Wait for a table row (1 wish) to load, then
-# fetch all the table rows in view
+# The webpage loads the wish history asynchronously, in JS. Wait for the frame holding the data to load before fetching
 try:
     WebDriverWait(driver, WAIT_TIME_INITIAL_LOAD).until(
         expected_conditions.presence_of_element_located((By.CSS_SELECTOR,
@@ -92,7 +91,7 @@ while not five_star_found:
         next_page_button = driver.find_element(By.CSS_SELECTOR, "span.page-item.to-next")
         next_page_button.click()
 
-        # Wait until page numbers changes (+1). If it doesn't, fetching is over
+        # Wait until page number increments (+1). If it doesn't, there are no other pages to fetch
         try:
             waiter = WebDriverWait(driver, WAIT_TIME_BETWEEN_PAGES)
             waiter.until(lambda drv: int(drv.find_elements(By.CSS_SELECTOR, "span.page-item")[1].text) != current_page)
