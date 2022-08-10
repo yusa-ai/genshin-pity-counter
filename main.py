@@ -81,6 +81,7 @@ while not five_star_found:
     five_star_found = five_star_index is not None
 
     if five_star_found:
+        # The index of the 5-Star is also the number of wishes made before it on the same page
         last_page_number_of_wishes = five_star_index
         five_star_name = rows[five_star_index].text.removesuffix(FIVE_STAR_STRING).strip()
 
@@ -93,8 +94,8 @@ while not five_star_found:
 
         # Wait until page number increments (+1). If it doesn't, there are no other pages to fetch
         try:
-            waiter = WebDriverWait(driver, WAIT_TIME_BETWEEN_PAGES)
-            waiter.until(lambda drv: int(drv.find_elements(By.CSS_SELECTOR, "span.page-item")[1].text) != current_page)
+            wait = WebDriverWait(driver, WAIT_TIME_BETWEEN_PAGES)
+            wait.until(lambda drv: int(drv.find_elements(By.CSS_SELECTOR, "span.page-item")[1].text) != current_page)
             current_page += 1
         except TimeoutException:
             last_page_number_of_wishes = len(driver.find_elements(By.CSS_SELECTOR, "div.log-item-row"))
