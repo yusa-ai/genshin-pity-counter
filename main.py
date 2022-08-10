@@ -3,11 +3,12 @@ import time
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.ui import WebDriverWait
+from webdriver_manager.chrome import ChromeDriverManager
 
 from functions import *
 
@@ -23,9 +24,11 @@ wish_history_url: str = fetch_wish_history_url()
 options = Options()
 options.headless = True
 
-service = Service("./geckodriver-v0.31.0-win64/geckodriver.exe")
+service = Service(ChromeDriverManager().install())
 
-driver = webdriver.Firefox(options=options, service=service)  # TODO move to Chrome
+# TODO move to Chrome
+# TODO download driver on the fly to avoid shipping it
+driver = webdriver.Chrome(options=options, service=service)
 
 driver.get(wish_history_url)
 
