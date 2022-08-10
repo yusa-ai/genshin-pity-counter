@@ -84,9 +84,10 @@ while not five_star_found:
     if five_star_found:
         # The index of the 5-Star is also the number of wishes made before it on the same page
         last_page_number_of_wishes = five_star_index
-        five_star_name = rows[five_star_index].text.removesuffix(FIVE_STAR_STRING).strip()
+        five_star_name = rows[five_star_index].find_element(By.CSS_SELECTOR, "span.cell.name").text.\
+            removesuffix(FIVE_STAR_STRING).strip()
 
-        print(f"5✰ found: {five_star_name}")
+        print(f"Found last 5✰ obtained: {five_star_name}")
 
     else:
         # Go to next page
@@ -105,4 +106,4 @@ while not five_star_found:
 driver.quit()
 
 five_star_pity = (current_page - 1) * MAX_ENTRIES_PER_PAGE + last_page_number_of_wishes
-print(f"5✰ Pity: {five_star_pity}")
+print(f"5✰ Pity: {five_star_pity}/90")
