@@ -36,4 +36,19 @@ with open(temp_file_path, errors="ignore") as file:
     contents = file.read()
 
 wish_history_url = re.findall(r"(https://hk4e-api-os.hoyoverse.com\S+&end_id=0)", contents)[-1]
-print(wish_history_url)
+domain = wish_history_url.split("?")[0]
+
+# Rebuild URL GET parameters for first page
+
+params = dict(parse.parse_qs(parse.urlsplit(wish_history_url).query))
+params["page"] = 1
+params["size"] = 20
+params.pop("end_id", None)
+
+wish_history_url = f"{domain}?{urlencode(params, doseq=True)}"
+
+first_20_items = requests.get(wish_history_url)
+first_20_items.raise_for_status()
+
+for item in first_20_items.json()["data"]["list"]:
+    print(item)
