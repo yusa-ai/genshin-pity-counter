@@ -1,114 +1,134 @@
+import os
+import re
+import subprocess
+import sys
+import tempfile
 import time
+from urllib import parse
+from urllib.parse import urlencode
 
-from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.edge.options import Options
-from selenium.webdriver.edge.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
+import requests
 
-from functions import *
+start_time = time.time()
 
-WAIT_TIME_INITIAL_LOAD = 10
-WAIT_TIME_BETWEEN_PAGES = 2
-FIVE_STAR_STRING = "(5-Star)"
-MAX_ENTRIES_PER_PAGE = 6
+OUTPUT_LOG_FILE_PATH = f"{os.environ['USERPROFILE']}/AppData/LocalLow/miHoYo/Genshin Impact/output_log.txt"
+DATA_FILE_NAME = "data_2"
 
-# TODO List of parameters to implement:
-# --debug
-# --banners to choose which banner(s) to parse
+API_MAX_PAGE_SIZE = 20
+WISH_HISTORY_URL_REGEX = r"(https://hk4e-api-os.hoyoverse.com\S+&end_id=0)"
 
-wish_history_url: str = fetch_wish_history_url()
+# Fetch game directory from output_log.txt
 
-# Initialize web driver to load and fetch the Wish History page
+with open(OUTPUT_LOG_FILE_PATH) as file:
+    warmup_message = next((line.split("Warmup file")[1] for line in file.readlines()
+                           if line.startswith("Warmup file")), None)
 
-options = Options()
-# options.headless = True
+game_dir = warmup_message.split("/Genshin Impact game/")[0].strip()
 
-service = Service(EdgeChromiumDriverManager().install())
+# Initialize paths based on game directory
 
-driver = webdriver.ChromiumEdge(options=options, service=service)
+data_dir = f"{game_dir}/Genshin Impact game/GenshinImpact_Data/webCaches/Cache/Cache_Data"
+data_file_path = f"{data_dir}/{DATA_FILE_NAME}"
+temp_file_path = f"{tempfile.gettempdir()}/{DATA_FILE_NAME}"
 
-driver.get(wish_history_url)
+# Copy data file to %temp% using PowerShell
+# A standard copy will not work on Windows while Genshin Impact is running because the file is locked
 
-# The webpage loads the wish history asynchronously, in JS. Wait for the frame holding the data to load before fetching
-try:
-    WebDriverWait(driver, WAIT_TIME_INITIAL_LOAD).until(
-        expected_conditions.presence_of_element_located((By.CSS_SELECTOR,
-                                                         "div#frame")))
-    print("Wish History has loaded. Proceeding...")
+cmd = f"Copy-Item \"{data_file_path}\" -Destination \"{temp_file_path}\""
+subprocess.Popen(["powershell.exe", cmd], shell=True, stdout=sys.stdout)
 
-except TimeoutException:
-    print("Could not load Wish History. Aborting...")
+# Use regex to find Wish History URL
 
-    # TODO Check for this
-    print("It may be that the previously fetched URL has now expired. Please open your Wish History in-game and "
-          "try again.")
+with open(temp_file_path, errors="ignore") as file:
+    contents = file.read()
 
-    driver.quit()
-    exit(1)
+wish_history_url = re.findall(WISH_HISTORY_URL_REGEX, contents)[-1]
+domain = wish_history_url.split("?")[0]
 
-else:
-    # Select limited rate-up banner history
+# Rebuild URL GET parameters for first page
 
-    driver.find_element(By.CSS_SELECTOR, ".type-select-container").click()
+params = dict(parse.parse_qs(parse.urlsplit(wish_history_url).query))
+params["page"] = 1
+params["size"] = API_MAX_PAGE_SIZE
+params.pop("end_id", None)
 
-    select_items = driver.find_elements(By.CSS_SELECTOR, "ul.ul-list > li")
-    item = next(item for item in select_items if item.get_attribute("data-id") == "301")
-    item.click()
+wish_history_url = f"{domain}?{urlencode(params, doseq=True)}"
 
-    time.sleep(WAIT_TIME_BETWEEN_PAGES)  # TODO wait for table to change
+response = requests.get(wish_history_url)
+response.raise_for_status()
 
-    # Now, check if there is any record at all
-    try:
-        driver.find_element(By.CSS_SELECTOR, "div.empty-row")
-        print("Wish History is empty.")
-        driver.quit()
-        exit(0)
 
-    except NoSuchElementException:
-        pass
+def process_wishes(wishes: dict) -> dict:
+    """
+    Counts wishes across page until 5-Star is found
+    :param wishes: The dictionary containing said wishes
+    :return: Number of wishes until 5-Star if any, if a 5-Star was found and its name, last wish id
+    """
+    five_s_found = False
+    five_s_name = None
+    count = 0
 
-# Cycle through all the pages
-
-five_star_found: bool = False
-current_page: int = 1
-last_page_number_of_wishes = int()
-
-while not five_star_found:
-    print(f"Fetching wishes from page {current_page}")
-
-    rows = driver.find_elements(By.CSS_SELECTOR, "div.log-item-row")
-    five_star_index = next((rows.index(row) for row in rows if FIVE_STAR_STRING in row.text), None)
-    five_star_found = five_star_index is not None
-
-    if five_star_found:
-        # The index of the 5-Star is also the number of wishes made before it on the same page
-        last_page_number_of_wishes = five_star_index
-        five_star_name = rows[five_star_index].find_element(By.CSS_SELECTOR, "span.cell.name").text.\
-            removesuffix(FIVE_STAR_STRING).strip()
-
-        print(f"Found last 5✰ obtained: {five_star_name}")
-
-    else:
-        # Go to next page
-        next_page_button = driver.find_element(By.CSS_SELECTOR, "span.page-item.to-next")
-        next_page_button.click()
-
-        # Wait until page number increments (+1). If it doesn't, there are no other pages to fetch
-        try:
-            wait = WebDriverWait(driver, WAIT_TIME_BETWEEN_PAGES)
-            wait.until(lambda drv: int(drv.find_elements(By.CSS_SELECTOR, "span.page-item")[1].text) != current_page)
-            current_page += 1
-        except TimeoutException:
-            last_page_number_of_wishes = len(driver.find_elements(By.CSS_SELECTOR, "div.log-item-row"))
+    for wish in wishes:
+        if wish["rank_type"] == "5":
+            five_s_found = True
+            five_s_name = wish["name"]
             break
 
-driver.quit()
+        count += 1
 
-five_star_pity = (current_page - 1) * MAX_ENTRIES_PER_PAGE + last_page_number_of_wishes
+    return {
+        "count": count,
+        "five_star_found": five_s_found,
+        "five_star_name": five_s_name,
+        "end_id": wishes[-1]["id"]
+    }
 
-print(f"5✰ Pity: {five_star_pity}/90 wishes")
+
+five_star_pity: int = 0
+five_star_found: bool = False
+five_star_name = None
+
+four_star_pity: int = 0
+four_star_found: bool = False
+four_star_name = None
+
+current_page = response.json()["data"]["list"]
+
+# 4-Star pity
+
+for w in current_page:
+    if w["rank_type"] == "4":
+        four_star_found = True
+        four_star_name = w["name"]
+        break
+    four_star_pity += 1
+
+# 5-Star pity
+
+while not five_star_found:
+    process_result = process_wishes(current_page)
+
+    five_star_pity += process_result["count"]
+    five_star_found = process_result["five_star_found"]
+    five_star_name = process_result["five_star_name"]
+
+    params["page"] = params["page"] + 1
+    params["end_id"] = process_result["end_id"]
+
+    wish_history_url = f"{domain}?{urlencode(params, doseq=True)}"
+
+    response = requests.get(wish_history_url)
+    response.raise_for_status()
+    current_page = response.json()["data"]["list"]
+
+
+print(f"5-Star pity: {five_star_pity}/90")
+if five_star_name:
+    print(f"Last 5-Star wished: {five_star_name}")
+
+print(f"4-Star pity: 0{four_star_pity}/10")
+if four_star_name:
+    print(f"Last 4-Star wished: {four_star_name}")
+
+
+print(f"\n\nElapsed time: {round(time.time() - start_time, 2)}s")
