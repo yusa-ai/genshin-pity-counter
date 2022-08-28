@@ -1,11 +1,16 @@
 import os
 import re
+from typing import Dict, Any
+
 import requests
 import subprocess
 import sys
 import tempfile
+import time
 from urllib import parse
 from urllib.parse import urlencode
+
+start_time = time.time()
 
 OUTPUT_LOG_FILE_PATH = f"{os.environ['USERPROFILE']}/AppData/LocalLow/miHoYo/Genshin Impact/output_log.txt"
 DATA_FILE_NAME = "data_2"
@@ -47,8 +52,60 @@ params.pop("end_id", None)
 
 wish_history_url = f"{domain}?{urlencode(params, doseq=True)}"
 
-first_20_items = requests.get(wish_history_url)
-first_20_items.raise_for_status()
+response = requests.get(wish_history_url)
+response.raise_for_status()
 
-for item in first_20_items.json()["data"]["list"]:
-    print(item)
+
+def process_wishes(wishes: dict) -> dict[int | bool | str | str]:
+    """
+    Count wishes until five star if any is found
+    :param wishes: The dictionary of wishes returned by the API
+    :return: The number of wishes counted, if the five star was found or not and the id of the last wish
+    """
+    five_s_found = False
+    five_s_name = None
+    count = 0
+
+    for wish in wishes:
+        if wish["rank_type"] == "5":
+            five_s_found = True
+            five_s_name = wish["name"]
+            break
+        count += 1
+
+    return {
+        "count": count,
+        "five_star_found": five_s_found,
+        "five_star_name": five_s_name,
+        "end_id": wishes[-1]["id"]
+    }
+
+
+five_star_pity: int = 0
+five_star_found: bool = False
+five_star_name: str = ""
+
+current_page = response.json()["data"]["list"]
+
+while not five_star_found:
+    process_result = process_wishes(current_page)
+    five_star_pity += process_result["count"]
+    five_star_found = process_result["five_star_found"]
+    five_star_name = process_result["five_star_name"]
+
+    params["page"] = params["page"] + 1
+    params["end_id"] = process_result["end_id"]
+
+    wish_history_url = f"{domain}?{urlencode(params, doseq=True)}"
+
+    response = requests.get(wish_history_url)
+    response.raise_for_status()
+    current_page = response.json()["data"]["list"]
+
+
+print(f"5-Star pity: {five_star_pity}")
+if five_star_name:
+    print(f"Last 5-Star wished: {five_star_name}")
+
+
+print(f"\n\nElapsed time: {round(time.time() - start_time, 2)}s")
