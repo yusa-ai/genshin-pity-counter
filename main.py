@@ -122,6 +122,9 @@ while not five_star_found:
     current_page = response.json()["data"]["list"]
 
 
+if five_star_pity < 10:
+    five_star_pity = f"0{five_star_pity}"
+
 print(f"5-Star pity: {five_star_pity}/90")
 if five_star_name:
     print(f"Last 5-Star wished: {five_star_name}")
