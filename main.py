@@ -32,13 +32,6 @@ data_dir = f"{game_dir}/Genshin Impact game/GenshinImpact_Data/webCaches/Cache/C
 data_file_path = f"{data_dir}/{DATA_FILE_NAME}"
 temp_file_path = f"{tempfile.gettempdir()}/{DATA_FILE_NAME}"
 
-# Delete previous data_2 from tmp
-
-try:
-    os.remove(temp_file_path)
-except OSError:
-    pass
-
 # Copy data file to %temp% using PowerShell
 # A standard copy will not work on Windows while Genshin Impact is running because the file is locked
 
