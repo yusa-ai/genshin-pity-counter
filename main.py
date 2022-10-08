@@ -9,13 +9,14 @@ from urllib.parse import urlencode
 
 import requests
 
-start_time = time.time()
 
 OUTPUT_LOG_FILE_PATH = f"{os.environ['USERPROFILE']}/AppData/LocalLow/miHoYo/Genshin Impact/output_log.txt"
 DATA_FILE_NAME = "data_2"
 
 API_MAX_PAGE_SIZE = 20
 WISH_HISTORY_URL_REGEX = r"(https://hk4e-api-os.hoyoverse.com\S+&end_id=0)"
+
+start_time = time.time()
 
 # Fetch game directory from output_log.txt
 
@@ -31,6 +32,13 @@ data_dir = f"{game_dir}/Genshin Impact game/GenshinImpact_Data/webCaches/Cache/C
 data_file_path = f"{data_dir}/{DATA_FILE_NAME}"
 temp_file_path = f"{tempfile.gettempdir()}/{DATA_FILE_NAME}"
 
+# Delete previous data_2 from tmp
+
+try:
+    os.remove(temp_file_path)
+except OSError:
+    pass
+
 # Copy data file to %temp% using PowerShell
 # A standard copy will not work on Windows while Genshin Impact is running because the file is locked
 
@@ -39,10 +47,23 @@ subprocess.Popen(["powershell.exe", cmd], shell=True, stdout=sys.stdout)
 
 # Use regex to find Wish History URL
 
-with open(temp_file_path, errors="ignore") as file:
-    contents = file.read()
+try:
+    with open(temp_file_path, errors="ignore") as file:
+        contents = file.read()
+except FileNotFoundError:
+    print(f"Could not copy file to {temp_file_path}.")
+    sys.exit(1)
 
-wish_history_url = re.findall(WISH_HISTORY_URL_REGEX, contents)[-1]
+# Iterate over matching URLs until finding one with valid data
+
+urls = re.findall(WISH_HISTORY_URL_REGEX, contents)
+for url in urls:
+    response = requests.get(url)
+    response.raise_for_status()
+    if (response.json()["data"] is not None):
+        wish_history_url = url
+        break
+
 domain = wish_history_url.split("?")[0]
 
 # Rebuild URL GET parameters for first page
