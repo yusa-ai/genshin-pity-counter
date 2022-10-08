@@ -43,7 +43,8 @@ except OSError:
 # A standard copy will not work on Windows while Genshin Impact is running because the file is locked
 
 cmd = f"Copy-Item \"{data_file_path}\" -Destination \"{temp_file_path}\""
-subprocess.Popen(["powershell.exe", cmd], shell=True, stdout=sys.stdout)
+process = subprocess.Popen(["powershell.exe", cmd], shell=True, stdout=sys.stdout)
+process.wait()
 
 # Use regex to find Wish History URL
 
