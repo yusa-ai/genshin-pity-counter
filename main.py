@@ -54,9 +54,11 @@ urls = re.findall(WISH_HISTORY_URL_REGEX, contents)
 for url in urls:
     response = requests.get(url)
     response.raise_for_status()
-    if (response.json()["data"] is not None):
-        wish_history_url = url
-        break
+    d = response.json()["data"]
+    if (d is not None):
+        if d["list"][0]["gacha_type"] == "301":
+            wish_history_url = url
+            break
 
 domain = wish_history_url.split("?")[0]
 
